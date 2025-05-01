@@ -1,0 +1,32 @@
+{
+  "files": {
+    "main.css": "/dev/static/css/main.d028c4e8.css",
+    "main.js": "/dev/static/js/main.05efa4c5.js",
+    "static/media/banner-placehoder.jpg": "/dev/static/media/banner-placehoder.e41abc977ba12215baef.jpg",
+    "static/media/bg-sign-up-cover.jpeg": "/dev/static/media/bg-sign-up-cover.30c5950b22e74f0d82ba.jpeg",
+    "static/media/user-placehoder.png": "/dev/static/media/user-placehoder.0d28dedd725188e0d5cc.png",
+    "static/media/profile-background.png": "/dev/static/media/profile-background.2934cb6c75d23edbe403.png",
+    "static/media/company-profile-banner.png": "/dev/static/media/company-profile-banner.52dca882c4f094a674c9.png",
+    "static/media/company-default.jpg": "/dev/static/media/company-default.97f5e276d2c92a98e4e1.jpg",
+    "static/media/team-1.jpg": "/dev/static/media/team-1.0fd36e0ee93dcfacdef8.jpg",
+    "static/media/team-2.jpg": "/dev/static/media/team-2.13ae2ce3e12f4cfed420.jpg",
+    "static/media/team-3.jpg": "/dev/static/media/team-3.0ef0be95e6850814c79e.jpg",
+    "static/media/team-4.jpg": "/dev/static/media/team-4.85c82b6e60178804017f.jpg",
+    "static/media/user-default.png": "/dev/static/media/user-default.7de99e7dbec8d93cc669.png",
+    "static/media/logo-white.svg": "/dev/static/media/logo-white.21f7a9d34f0de01200ca96364e9d3397.svg",
+    "static/media/logo-login-white.svg": "/dev/static/media/logo-login-white.2d38dcd3de62f23a5be29beeaa135aa7.svg",
+    "static/media/logo-slack.svg": "/dev/static/media/logo-slack.7c47c5aa474b5c4fb39fcf05ffb8e4e7.svg",
+    "static/media/logo-xd.svg": "/dev/static/media/logo-xd.6e37886f94dba0c2967ece68a152e30c.svg",
+    "static/media/logo-invision.svg": "/dev/static/media/logo-invision.a1062115730dcd10e1c4f4abe7b9ab33.svg",
+    "static/media/logo-spotify.svg": "/dev/static/media/logo-spotify.e83cf56c9d99a1fdf59e8deb58bbe470.svg",
+    "static/media/logo-jira.svg": "/dev/static/media/logo-jira.c19fd4e416babfbd0fdb0a794188c601.svg",
+    "static/media/logo-atlassian.svg": "/dev/static/media/logo-atlassian.f2b0e8570a4b4ce768854ff3dad1a6e1.svg",
+    "index.html": "/dev/index.html",
+    "main.d028c4e8.css.map": "/dev/static/css/main.d028c4e8.css.map",
+    "main.05efa4c5.js.map": "/dev/static/js/main.05efa4c5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d028c4e8.css",
+    "static/js/main.05efa4c5.js"
+  ]
+}

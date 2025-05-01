@@ -1,0 +1,96 @@
+.calendar-container {
+  padding: 0;
+}
+
+.fc {
+  /* Calendar header styles */
+  .fc-toolbar-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #213a93;
+  }
+  .fc-toolbar {
+    margin-bottom: 1.5em;
+    
+    .fc-button {
+      background-color: #213a93;
+      border-color: #213a93;
+      padding: 5px 20px;
+      font-size: 1rem;
+      
+      &:hover {
+        background-color: #1a2d75;
+        border-color: #1a2d75;
+      }
+      
+      &:disabled {
+        background-color: #ccc;
+        border-color: #ccc;
+      }
+    }
+    
+    .fc-today-button {
+      background-color: #4CAF50;
+      border-color: #4CAF50;
+      
+      &:hover {
+        background-color: #388E3C;
+        border-color: #388E3C;
+      }
+    }
+  }
+  /* Calendar body styles */
+  .fc-daygrid-day {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+  
+
+  /* Event styles */
+  .fc-event {
+    border: none;
+    padding: 2px 4px;
+    margin: 1px 0;
+    cursor: pointer;
+    
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  /* List view styles */
+  .fc-list-view {
+    border: 1px solid #ddd;
+    
+    .fc-list-day-cushion {
+      background-color: #f8f9fa;
+    }
+    
+    .fc-list-event:hover td {
+      background-color: #f5f5f5;
+    }
+  }
+}
+
+/* Event category colors */
+.event-agm { background-color: #4CAF50 !important; }
+.event-egm { background-color: #2196F3 !important; }
+.event-reporting { background-color: #9C27B0 !important; }
+.event-advice { background-color: #F44336 !important; }
+.event-general { background-color: #FFC107 !important; }
+
+/* Dialog styles */
+.MuiDialog-paper {
+  .MuiDialogTitle-root {
+    background-color: #213a93;
+    color: white;
+  }
+  
+  .MuiDialogContent-root {
+    padding: 20px;
+  }
+} 
