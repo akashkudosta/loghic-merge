@@ -19,6 +19,7 @@ import { NotificationProvider } from "context/NotificationContext";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import Messages from "frontend/pages/Messages";
+import { FollowProvider } from './context/FollowContext';
 
 export default function App() {
   const authContext = useContext(AuthContext);
@@ -153,29 +154,31 @@ export default function App() {
   }
 
   return (
-    <NotificationProvider>
-      <ThemeProvider theme={darkMode ? themeDark : theme}>
-        <CssBaseline />
-        {/* Only render Sidenav and other dashboard components if it's an admin route and authenticated */}
-        {layout === "dashboard" && pathname.includes("/admin") && isAuthenticated && (
-          <>
-            <Sidenav
-              color={sidenavColor}
-              brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-              brandName="Loghic Dashboard"
-              routes={routes}
-              onMouseEnter={handleOnMouseEnter}
-              onMouseLeave={handleOnMouseLeave}
-            />
-            <Configurator /> 
-          </>
-        )}
-        
-        <Routes> 
-          {getRoutes(routes)} 
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </ThemeProvider>
-    </NotificationProvider>
+    <FollowProvider>
+      <NotificationProvider>
+        <ThemeProvider theme={darkMode ? themeDark : theme}>
+          <CssBaseline />
+          {/* Only render Sidenav and other dashboard components if it's an admin route and authenticated */}
+          {layout === "dashboard" && pathname.includes("/admin") && isAuthenticated && (
+            <>
+              <Sidenav
+                color={sidenavColor}
+                brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
+                brandName="Loghic Dashboard"
+                routes={routes}
+                onMouseEnter={handleOnMouseEnter}
+                onMouseLeave={handleOnMouseLeave}
+              />
+              <Configurator /> 
+            </>
+          )}
+          
+          <Routes> 
+            {getRoutes(routes)} 
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </ThemeProvider>
+      </NotificationProvider>
+    </FollowProvider>
   );
 }

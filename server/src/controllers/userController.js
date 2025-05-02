@@ -564,83 +564,6 @@ export const toggleUserFollow = async (req, res) => {
     }
 };
 
-// Controller function to get user's followers
-export const getUserFollowers = async (req, res) => {
-    try {
-
-        const { page: queryPage, limit: queryLimit, User_PublicID: queryPublicID } = req.query; // Read page and limit from query string
-        const { page: bodyPage = 1, limit: bodyLimit = 20, User_PublicID: bodyPublicID } = req.body; // Read page and limit from request body
-      
-        const User_PublicID = queryPublicID || bodyPublicID;
-        const page = queryPage ? parseInt(queryPage) : parseInt(bodyPage); // Use query page if available
-        const limit = queryLimit ? parseInt(queryLimit) : parseInt(bodyLimit); // Use query limit if available
-        const skip = (page - 1) * limit; // Calculate the number of documents to skip
-
-        if (!User_PublicID) {
-            return res.status(400).json({
-                status: false,
-                message: 'User ID is required',
-                data: {}
-            });
-        }
-
-        const followers = await mongoose.connection.db.collection('UserFollow')
-            .aggregate([
-                {
-                    $match: { UserFollow_FollowingID: User_PublicID }
-                },
-                {
-                    $lookup: {
-                        from: 'User',
-                        localField: 'UserFollow_FollowerID',
-                        foreignField: 'User_PublicID',
-                        as: 'follower'
-                    }
-                },
-                {
-                    $unwind: '$follower'
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        UserFollow_PublicID: 1,
-                        User_PublicID: '$follower.User_PublicID',
-                        User_Name: '$follower.User_Name',
-                        User_ImageURL: '$follower.User_ImageURL',
-                        UserFollow_CreatedDateTime: 1
-                    }
-                },
-                { $skip: skip },
-                { $limit: limit }
-            ]).toArray();
-
-        const totalFollowers = await mongoose.connection.db.collection('UserFollow')
-            .countDocuments({ UserFollow_FollowingID: User_PublicID });
-
-        return res.status(200).json({
-            status: true,
-            message: 'Followers retrieved successfully',
-            data: {
-                followers,
-                pagination: {
-                    total: totalFollowers,
-                    page,
-                    limit,
-                    totalPages: Math.ceil(totalFollowers / limit)
-                }
-            }
-        });
-
-    } catch (error) {
-        console.error('Error getting followers:', error);
-        res.status(500).json({
-            status: false,
-            message: 'Internal Server Error',
-            data: {}
-        });
-    }
-};
-
 // Controller function to check if user is following another user
 export const checkFollowStatus = async (req, res) => {
     try {
@@ -684,6 +607,385 @@ export const checkFollowStatus = async (req, res) => {
 
     } catch (error) {
         console.error('Error checking follow status:', error);
+        res.status(500).json({
+            status: false,
+            message: 'Internal Server Error',
+            data: {}
+        });
+    }
+};
+
+/**
+ * Get current user's followers with pagination for dashboard
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getUserFollowers = async (req, res) => {
+    try {
+        const User_PublicID = req.user?.User_PublicID;
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        if (!User_PublicID) {
+            return res.status(401).json({
+                status: false,
+                message: 'Unauthorized access',
+                data: {}
+            });
+        }
+
+        // Get followers with user details
+        const followers = await mongoose.connection.db.collection('UserFollow')
+            .aggregate([
+                {
+                    $match: { UserFollow_FollowingID: User_PublicID }
+                },
+                {
+                    $lookup: {
+                        from: 'User',
+                        localField: 'UserFollow_FollowerID',
+                        foreignField: 'User_PublicID',
+                        as: 'follower'
+                    }
+                },
+                {
+                    $unwind: '$follower'
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        User_PublicID: '$follower.User_PublicID',
+                        User_Name: '$follower.User_Name',
+                        User_ImageURL: '$follower.User_ImageURL',
+                        User_Email: '$follower.User_Email',
+                        UserFollow_CreatedDateTime: 1
+                    }
+                },
+                { $skip: skip },
+                { $limit: parseInt(limit) }
+            ]).toArray();
+
+        // Get total count
+        const totalFollowers = await mongoose.connection.db.collection('UserFollow')
+            .countDocuments({ UserFollow_FollowingID: User_PublicID });
+
+        // Get follow status for each follower
+        const followersWithStatus = await Promise.all(followers.map(async (follower) => {
+            const isFollowing = await mongoose.connection.db.collection('UserFollow')
+                .findOne({
+                    UserFollow_FollowerID: User_PublicID,
+                    UserFollow_FollowingID: follower.User_PublicID
+                });
+            return {
+                ...follower,
+                isFollowing: !!isFollowing
+            };
+        }));
+
+        res.status(200).json({
+            status: true,
+            message: 'Dashboard followers retrieved successfully',
+            data: {
+                followers: followersWithStatus,
+                pagination: {
+                    total: totalFollowers,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(totalFollowers / parseInt(limit))
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error getting dashboard followers:', error);
+        res.status(500).json({
+            status: false,
+            message: 'Internal Server Error',
+            data: {}
+        });
+    }
+};
+
+/**
+ * Get users that current user is following with pagination for dashboard
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getUserFollowing = async (req, res) => {
+    try {
+        const User_PublicID = req.user?.User_PublicID;
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        if (!User_PublicID) {
+            return res.status(401).json({
+                status: false,
+                message: 'Unauthorized access',
+                data: {}
+            });
+        }
+
+        // Get following users with details
+        const following = await mongoose.connection.db.collection('UserFollow')
+            .aggregate([
+                {
+                    $match: { UserFollow_FollowerID: User_PublicID }
+                },
+                {
+                    $lookup: {
+                        from: 'User',
+                        localField: 'UserFollow_FollowingID',
+                        foreignField: 'User_PublicID',
+                        as: 'following'
+                    }
+                },
+                {
+                    $unwind: '$following'
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        User_PublicID: '$following.User_PublicID',
+                        User_Name: '$following.User_Name',
+                        User_ImageURL: '$following.User_ImageURL',
+                        User_Email: '$following.User_Email',
+                        UserFollow_CreatedDateTime: 1
+                    }
+                },
+                { $skip: skip },
+                { $limit: parseInt(limit) }
+            ]).toArray();
+
+        // Get total count
+        const totalFollowing = await mongoose.connection.db.collection('UserFollow')
+            .countDocuments({ UserFollow_FollowerID: User_PublicID });
+
+        res.status(200).json({
+            status: true,
+            message: 'Dashboard following users retrieved successfully',
+            data: {
+                following: following.map(user => ({ ...user, isFollowing: true })), // These are users we're following
+                pagination: {
+                    total: totalFollowing,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(totalFollowing / parseInt(limit))
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error getting dashboard following:', error);
+        res.status(500).json({
+            status: false,
+            message: 'Internal Server Error',
+            data: {}
+        });
+    }
+};
+
+/**
+ * Get current user's followers and following counts for dashboard
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getFollowCounts = async (req, res) => {
+    try {
+        const User_PublicID = req.user?.User_PublicID;
+
+        if (!User_PublicID) {
+            return res.status(401).json({
+                status: false,
+                message: 'Unauthorized access',
+                data: {}
+            });
+        }
+
+        // Get counts in parallel
+        const [followersCount, followingCount] = await Promise.all([
+            mongoose.connection.db.collection('UserFollow')
+                .countDocuments({ UserFollow_FollowingID: User_PublicID }),
+            mongoose.connection.db.collection('UserFollow')
+                .countDocuments({ UserFollow_FollowerID: User_PublicID })
+        ]);
+
+        res.status(200).json({
+            status: true,
+            message: 'Dashboard connection counts retrieved successfully',
+            data: {
+                followers: followersCount,
+                following: followingCount
+            }
+        });
+    } catch (error) {
+        console.error('Error getting dashboard connection counts:', error);
+        res.status(500).json({
+            status: false,
+            message: 'Internal Server Error',
+            data: {}
+        });
+    }
+};
+
+/**
+ * Get current user's contacts (unique list of followers and following)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getUserContacts = async (req, res) => {
+    try {
+        const User_PublicID = req.user?.User_PublicID;
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        if (!User_PublicID) {
+            return res.status(401).json({
+                status: false,
+                message: 'Unauthorized access',
+                data: {}
+            });
+        }
+
+        // Get unique contacts using aggregation
+        const contactsAggregation = [
+            {
+                $match: {
+                    $or: [
+                        { UserFollow_FollowerID: User_PublicID },
+                        { UserFollow_FollowingID: User_PublicID }
+                    ]
+                }
+            },
+            {
+                $project: {
+                    contactId: {
+                        $cond: {
+                            if: { $eq: ['$UserFollow_FollowerID', User_PublicID] },
+                            then: '$UserFollow_FollowingID',
+                            else: '$UserFollow_FollowerID'
+                        }
+                    },
+                    UserFollow_CreatedDateTime: 1
+                }
+            },
+            {
+                $group: {
+                    _id: '$contactId',
+                    UserFollow_CreatedDateTime: { $first: '$UserFollow_CreatedDateTime' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'User',
+                    localField: '_id',
+                    foreignField: 'User_PublicID',
+                    as: 'userDetails'
+                }
+            },
+            {
+                $unwind: '$userDetails'
+            }
+        ];
+
+        // Add search condition if search query exists
+        if (search) {
+            contactsAggregation.push({
+                $match: {
+                    $or: [
+                        { 'userDetails.User_Name': { $regex: search, $options: 'i' } },
+                        { 'userDetails.User_Email': { $regex: search, $options: 'i' } },
+                        { 'userDetails.User_Role': { $regex: search, $options: 'i' } }
+                    ]
+                }
+            });
+        }
+
+        // Add sorting, skip and limit
+        contactsAggregation.push(
+            { $sort: { UserFollow_CreatedDateTime: -1 } },
+            { $skip: skip },
+            { $limit: parseInt(limit) },
+            {
+                $project: {
+                    _id: 0,
+                    User_PublicID: '$userDetails.User_PublicID',
+                    User_Name: '$userDetails.User_Name',
+                    User_Email: '$userDetails.User_Email',
+                    User_ImageURL: '$userDetails.User_ImageURL',
+                    User_Role: '$userDetails.User_Role',
+                    UserFollow_CreatedDateTime: 1
+                }
+            }
+        );
+
+        // Execute aggregation
+        const contacts = await mongoose.connection.db.collection('UserFollow')
+            .aggregate(contactsAggregation).toArray();
+
+        // Get total count for pagination
+        const totalContacts = await mongoose.connection.db.collection('UserFollow')
+            .aggregate([
+                {
+                    $match: {
+                        $or: [
+                            { UserFollow_FollowerID: User_PublicID },
+                            { UserFollow_FollowingID: User_PublicID }
+                        ]
+                    }
+                },
+                {
+                    $project: {
+                        contactId: {
+                            $cond: {
+                                if: { $eq: ['$UserFollow_FollowerID', User_PublicID] },
+                                then: '$UserFollow_FollowingID',
+                                else: '$UserFollow_FollowerID'
+                            }
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$contactId'
+                    }
+                },
+                {
+                    $count: 'total'
+                }
+            ]).toArray();
+
+        // Get follow status for each contact
+        const contactsWithStatus = await Promise.all(contacts.map(async (contact) => {
+            const isFollowing = await mongoose.connection.db.collection('UserFollow')
+                .findOne({
+                    UserFollow_FollowerID: User_PublicID,
+                    UserFollow_FollowingID: contact.User_PublicID
+                });
+            const isFollower = await mongoose.connection.db.collection('UserFollow')
+                .findOne({
+                    UserFollow_FollowerID: contact.User_PublicID,
+                    UserFollow_FollowingID: User_PublicID
+                });
+            return {
+                ...contact,
+                isFollowing: !!isFollowing,
+                isFollower: !!isFollower
+            };
+        }));
+
+        res.status(200).json({
+            status: true,
+            message: 'Contacts retrieved successfully',
+            data: {
+                contacts: contactsWithStatus,
+                pagination: {
+                    total: totalContacts[0]?.total || 0,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil((totalContacts[0]?.total || 0) / parseInt(limit))
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error getting contacts:', error);
         res.status(500).json({
             status: false,
             message: 'Internal Server Error',

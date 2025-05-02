@@ -4,97 +4,141 @@ import {
   Card,
   Box,
   Typography,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   Avatar,
-  Button,
   TextField,
   InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import MessageIcon from '@mui/icons-material/Message';
 import MDBox from 'components/MDBox';
+import MDButton from 'components/MDButton';
 import MDTypography from 'components/MDTypography';
+import MessagePopup from 'components/MessagePopup';
 import FrontendLayout from "layouts/frontend";
 import axios from 'axios';
 import DashboardSidebar from './DashboardSidebar';
-import MDButton from 'components/MDButton';
 
 const Contacts = () => {
   const [userInfo, setUserInfo] = useState(null);
+  const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [contacts, setContacts] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      avatar: 'https://files.loghic.com/TEST_USER/defaultImages/profileImages/user-icon_11.png',
-      role: 'Developer'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      avatar: 'https://files.loghic.com/TEST_USER/defaultImages/profileImages/user-icon_11.png',
-      role: 'Designer'
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      email: 'mike.johnson@example.com',
-      avatar: 'https://files.loghic.com/TEST_USER/defaultImages/profileImages/user-icon_11.png',
-      role: 'Manager'
+  const [messagePopup, setMessagePopup] = useState({
+    open: false,
+    recipient: null,
+    recipientId: null,
+    recipientImage: null
+  });
+
+  const fetchUserInfo = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setUserInfo(response.data.data.userInfo);
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      setError('Failed to fetch user info');
     }
-  ]);
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/users/contacts`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setContacts(response.data.data.contacts || []);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      setError('Failed to fetch contacts');
+    }
+  };
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setUserInfo(response.data.data.userInfo);
+        await Promise.all([
+          fetchUserInfo(),
+          fetchContacts()
+        ]);
       } catch (error) {
-        console.error('Error fetching user info:', error);
+        console.error('Error fetching data:', error);
+        setError('Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserInfo();
+    fetchData();
   }, []);
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleMessageClick = (contact) => {
+    setMessagePopup({
+      open: true,
+      recipient: contact.User_Name,
+      recipientId: contact.User_PublicID,
+      recipientImage: contact.User_ImageURL
+    });
+  };
+
+  const handleCloseMessagePopup = () => {
+    setMessagePopup({
+      open: false,
+      recipient: null,
+      recipientId: null,
+      recipientImage: null
+    });
+  };
+
+  const filteredContacts = contacts.filter(contact => 
+    contact.User_Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.User_Email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const ContactCard = ({ contact }) => (
-    <Card sx={{ p: 1, mb: 2 }}>
+    <Card sx={{ p: 2, mb: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Avatar
-            src={contact.avatar}
+            src={contact.User_ImageURL || 'https://files.loghic.com/TEST_USER/defaultImages/profileImages/user-icon_11.png'}
             sx={{ width: 50, height: 50, mr: 2 }}
+            alt={contact.User_Name}
           />
           <Box>
-            <Typography variant="h6">{contact.name}</Typography>
+            <Typography variant="h6">{contact.User_Name}</Typography>
             <Typography variant="body2" color="text.secondary">
-              {contact.email}
+              {contact.User_Email}
             </Typography>
-            <Typography variant="body2" color="primary">
-              {contact.role}
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              {contact.User_Role}
             </Typography>
           </Box>
         </Box>
-        <Button variant="outlined" sx={{ backgroundColor: 'white', color: '#203a93', borderColor: '#203a93' }}>
+        <MDButton
+          variant="contained"
+          color="info"
+          onClick={() => handleMessageClick(contact)}
+          startIcon={<MessageIcon />}
+          sx={{
+            minWidth: '120px',
+            borderRadius: '8px',
+            backgroundColor: '#213a93',
+            '&:hover': {
+              backgroundColor: '#1a2d75'
+            }
+          }}
+        >
           Message
-        </Button>
+        </MDButton>
       </Box>
     </Card>
   );
@@ -102,8 +146,18 @@ const Contacts = () => {
   if (loading) {
     return (
       <FrontendLayout>
+        <MDBox display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </MDBox>
+      </FrontendLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <FrontendLayout>
         <MDBox>
-          <Typography>Loading...</Typography>
+          <Typography color="error">{error}</Typography>
         </MDBox>
       </FrontendLayout>
     );
@@ -121,19 +175,16 @@ const Contacts = () => {
           {/* Main Content Area */}
           <Grid item xs={12} md={9}>
             <Card sx={{ p: 3, backgroundColor: 'white' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <MDTypography variant="h5" color="dark">
-                  Contacts
-                </MDTypography>
-              </Box>
+              <MDTypography variant="h5" color="dark" mb={3}>
+                Contacts
+              </MDTypography>
 
-              {/* Search Bar */}
+              {/* Search Box */}
               <TextField
                 fullWidth
                 variant="outlined"
                 placeholder="Search contacts..."
                 value={searchQuery}
-                
                 onChange={(e) => setSearchQuery(e.target.value)}
                 sx={{ mb: 3 }}
                 InputProps={{
@@ -147,14 +198,29 @@ const Contacts = () => {
 
               {/* Contacts List */}
               <Box>
-                {filteredContacts.map(contact => (
-                  <ContactCard key={contact.id} contact={contact} />
-                ))}
+                {filteredContacts.length > 0 ? (
+                  filteredContacts.map(contact => (
+                    <ContactCard key={contact.User_PublicID} contact={contact} />
+                  ))
+                ) : (
+                  <Typography variant="body1" textAlign="center" py={4}>
+                    {searchQuery ? "No contacts found matching your search" : "No contacts yet"}
+                  </Typography>
+                )}
               </Box>
             </Card>
           </Grid>
         </Grid>
       </MDBox>
+
+      {/* Message Popup */}
+      <MessagePopup
+        open={messagePopup.open}
+        onClose={handleCloseMessagePopup}
+        recipient={messagePopup.recipient}
+        recipientId={messagePopup.recipientId}
+        recipientImage={messagePopup.recipientImage}
+      />
     </FrontendLayout>
   );
 };

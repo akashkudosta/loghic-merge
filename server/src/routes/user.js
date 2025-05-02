@@ -1,5 +1,19 @@
 import express from 'express';
-import { getUsers, getUserbyId, getUserByEmail, updateUserProfile, updateUserPermissions, updateUserPassword, userNotificationsSettings, toggleUserFollow, checkFollowStatus, getUserFollowers } from '../controllers/userController.js'; 
+import { 
+    getUsers, 
+    getUserbyId, 
+    getUserByEmail, 
+    updateUserProfile, 
+    updateUserPermissions, 
+    updateUserPassword, 
+    userNotificationsSettings, 
+    toggleUserFollow, 
+    checkFollowStatus, 
+    getUserFollowers,
+    getUserFollowing,
+    getFollowCounts,
+    getUserContacts
+} from '../controllers/userController.js'; 
 import passport from 'passport';
 
 const router = express.Router();
@@ -29,7 +43,13 @@ router.post('/userNotificationsSettings', passport.authenticate('jwt', { session
 // Follow/Unfollow routes
 router.post('/follow', passport.authenticate('jwt', { session: false }), toggleUserFollow);
 router.post('/followStatus', passport.authenticate('jwt', { session: false }), checkFollowStatus);
-router.get('/followers', passport.authenticate('jwt', { session: false }), getUserFollowers);
 
+// Dashboard connection routes
+router.get('/followers', passport.authenticate('jwt', { session: false }), getUserFollowers);
+router.get('/following', passport.authenticate('jwt', { session: false }), getUserFollowing);
+router.get('/getFollowCounts', passport.authenticate('jwt', { session: false }), getFollowCounts);
+
+// Contacts route
+router.get('/contacts', passport.authenticate('jwt', { session: false }), getUserContacts);
 
 export default router; 

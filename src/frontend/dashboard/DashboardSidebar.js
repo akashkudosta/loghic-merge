@@ -32,6 +32,8 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import profileBackground from '../../assets/images/profile-background.png';
 import defaultAvatar from '../../assets/images/user-placehoder.png';
+import axios from 'axios';
+import { useFollow } from '../../context/FollowContext';
 
 // Define menu items for different roles
 const ROLE_BASED_MENU_ITEMS = {
@@ -96,9 +98,14 @@ const DashboardSidebar = ({ userInfo }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { followCounts, fetchFollowCounts } = useFollow();
 
   // Get user role from userInfo, default to 'general' if not specified
   const userRole = (userInfo?.User_Role || 'general').toLowerCase();
+
+  useEffect(() => {
+    fetchFollowCounts();
+  }, [fetchFollowCounts]);
 
   useEffect(() => {
     // Get settings items safely with fallback to general
@@ -205,11 +212,28 @@ const DashboardSidebar = ({ userInfo }) => {
       </Button>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1, paddingX:3, paddingBottom: 2, borderBottom: '1px solid #FFD700' }}>
-        <Typography variant="body2" sx={{ mr: 2 }}>
-          <strong>6</strong> Following
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            mr: 2,
+            cursor: 'pointer',
+            color: location.pathname === '/dashboard/followers' ? '#213a93' : 'inherit',
+          }}
+          component={Link}
+          to="/dashboard/followers"
+        >
+          <strong>{followCounts?.following || 0}</strong> Following
         </Typography>
-        <Typography variant="body2">
-          <strong>4</strong> Followers
+        <Typography 
+          variant="body2"
+          sx={{ 
+            cursor: 'pointer',
+            color: location.pathname === '/dashboard/followers' ? '#213a93' : 'inherit',
+          }}
+          component={Link}
+          to="/dashboard/followers"
+        >
+          <strong>{followCounts?.followers || 0}</strong> Followers
         </Typography>
       </Box>
 
